@@ -7,6 +7,7 @@ This repository contains the implementation of the [Croquet VM](https://en.wikip
 The big idea here is to use the Electric distributed runtime as a basis for a higher level scene graph sync abstraction for use in collaborative virtual worlds.
 
 Here are the first steps video with a <200 LoC classic Croquet VM implementation from Krestianstvo SDK 4:
+
 https://user-images.githubusercontent.com/124158/236840769-66ac1328-136d-4a66-b01c-456ea58b71c9.mp4
 
 * In **<200 LoC** all parts of the classic **Croquet VM** are implemented, including **Reflector server**, **Virtual Time**, **Recursive Future Messages** etc. VM is distributed in a single Electric application as a **DAG**.
