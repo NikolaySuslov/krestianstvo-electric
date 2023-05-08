@@ -4,8 +4,9 @@
 
 This repository contains the implementation of the [Croquet VM](https://en.wikipedia.org/wiki/Croquet_OS) (based on [Krestianstvo SDK 4](https://github.com/NikolaySuslov/krestianstvo) and [Virtual World Framework](https://github.com/virtual-world-framework/vwf)) in [Electric Clojure programming language](https://github.com/hyperfiddle/electric).
 
-Here are the first steps video with a <200 LoC classic Croquet VM implementation from Krestianstvo SDK 4.
+The big idea here is to use the Electric distributed runtime as a basis for a higher level scene graph sync abstraction for use in collaborative virtual worlds.
 
+Here are the first steps video with a <200 LoC classic Croquet VM implementation from Krestianstvo SDK 4:
 https://user-images.githubusercontent.com/124158/236840769-66ac1328-136d-4a66-b01c-456ea58b71c9.mp4
 
 * In **<200 LoC** all parts of the classic **Croquet VM** are implemented, including **Reflector server**, **Virtual Time**, **Recursive Future Messages** etc. VM is distributed in a single Electric application as a **DAG**.
@@ -23,6 +24,7 @@ Learn more about [**Krestianstvo SDK 4**](https://github.com/NikolaySuslov/krest
 
 * [What is Croquet Anyways](https://blog.codefrau.net/2021/08/what-is-croquet-anyways.html)
 * https://en.wikipedia.org/wiki/Croquet_Project
+* https://en.wikipedia.org/wiki/Croquet_OS
 * https://croquet.io/croquet-os/
 
 Krestianstvo SDK 4 is the Open Source implementation of the Croquet application architecture in Functional Reactive Paradigm.
@@ -36,6 +38,9 @@ Electric Clojure is a new web development paradigm that uses a compiler to build
 
 * [Electric Clojure](https://github.com/hyperfiddle/electric)
 
+The Virtual World Framework (VWF) is a means to connect robust 3D, immersive, entities with other entities, virtual worlds, content and users via web browsers. 
+* https://github.com/virtual-world-framework/vwf
+* https://en.wikipedia.org/wiki/Virtual_world_framework
 
 ## Development
 
