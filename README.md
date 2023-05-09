@@ -28,6 +28,9 @@ Learn more about [**Krestianstvo SDK 4**](https://github.com/NikolaySuslov/krest
 * https://en.wikipedia.org/wiki/Croquet_OS
 * https://croquet.io/croquet-os/
 
+The video of David P. Reed at OOPSLA '05, talking about core concepts of the Croquet architecture.  
+[Designing croquet's TeaTime: a real-time, temporal environment for active object cooperation](https://dl.acm.org/doi/10.1145/1094855.1094861) 
+
 Krestianstvo SDK 4 is the Open Source implementation of the Croquet application architecture in Functional Reactive Paradigm.
 
 * https://github.com/NikolaySuslov/krestianstvo
