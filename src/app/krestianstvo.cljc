@@ -131,43 +131,18 @@
 #?(:clj (defonce !savedState (atom {})))
 (e/def savedState (e/server (e/watch !savedState)))
 
-(defonce !restoreState (atom false))
-(e/def restoreState (e/client (e/watch !restoreState)))
-
-(defonce !synced (atom false))
-(e/def synced (e/client (e/watch !synced)))
-
 (defonce !play (atom true))
 (e/def play (e/client (e/watch !play)))
 
-(def !rC (atom 0))
-(e/def rC (e/client (e/watch !rC)))
-
-#?(:clj (def !recordQ (atom ())))
-(e/def recordQ (e/server (e/watch !recordQ)))
-
 (defn msgTask [k] (m/sp (m/? (m/sleep 0)) k))
 (e/defn restoreMsgQueue [k] (e/client
-                             (do
-                               (swap! !rC inc)
-                               (reset! !x (new (e/task->cp (msgTask k)))))))
-(e/defn setAppState []
-  (if restoreState
-    (do
-      (println "STATE " (:state (e/server savedState)))
-      (reset! !appState (:state (e/server savedState)))
-      (reset! !vTime (:time (e/server savedState)))
+                             (reset! !x (new (e/task->cp (msgTask k))))))
 
-      (if (>= rC (count (:queue (e/server savedState))))
-        (do
-          (reset! !restoreState false)
-          (reset! !syncState true)
-          (reset! !synced true))))))
 
 (e/defn getStateQueue [r] (if getState
                             (do (reset! !stateQ {:state appState
                                                  ;; :now (:time act) ;;vtNow
-                                                 :time (:time act) ;;vTime
+                                                 :time vTime ;;vTime
                                                  :queue (map (fn [e] (dissoc e :seq)) (sort-by (fn [a,b] (- a b)) (into [] (filter (fn [m] (not (and (= (-> m :origin) "reflector") (some? (-> m :msg :action)))))) r)))})
                                 (reset! !getState false))
                             (e/server (reset! !savedState stateQ))))
@@ -175,14 +150,12 @@
 
 ; Dispatch the messages in local queue. Messages, that marked with origin "reflector" are advancing time and trigger the queue to reolve all pending future messages up to the new now.
 (e/defn dispatch [running] (e/client
-
                             (let [ft (get (first running) :time)]
-                              (if (and play syncState (= restoreState false) (> (count running) 0) (<= ft vTime))
+                              (if (and play syncState (> (count running) 0) (<= ft vTime))
                                 (new processMsg)))
 
                             (if (and (= session-id master) (> (count users) 1))
-                              (getStateQueue. running)
-                              (setAppState.))))
+                              (getStateQueue. running))))
 
 ; Add messages to the queue and create corresponding resolvers.
 (e/defn processQueue []  (let
@@ -340,24 +313,31 @@
                    ; Advance virtual time
                    (e/server (reset! !msg {:msg {:name :tick :action nil :params nil} :id "all" :time now :origin "reflector"}))
                    (processQueue.)
-                   (reset! !vTime now)
+                   (if syncState (reset! !vTime now))
                    (reset! !x msg)
 
                    ; Managing new connections
                    (e/server (e/for [u users] (do
 
-                                                (if (and (= (pr-str session-id) master-user) (>= (count users) 1))
+                                                (if (and (= (pr-str session-id) master-user) (>= (count users) 2))
                                                   (e/client  (do
                                                                (println "New user ask for Master! " u)
                                                                (reset! !getState true)
                                                                (reset! !stateQ {})))))))
 
-                   (e/server (if (and (not= (pr-str session-id) master-user) (> (count users) 1) (not synced))
-                               (e/client (do
-                                           (println "not master " session-id  " master " master-user)
-                                           (e/for [rm (get savedState :queue)]
-                                             (restoreMsgQueue. rm))
-                                           (reset! !restoreState true))))))))
+                   ;;(not synced)
+                   (e/server (if (and (not= (pr-str session-id) master-user)
+                                      (> (count users) 1)
+                                      (not (e/client syncState)))
+                               (do
+                                 (e/client (do
+                                             (println "not master " session-id  " master " master-user)
+
+                                             (reset! !appState (:state (e/server savedState)))
+                                             (reset! !vTime (:time (e/server savedState)))
+                                             (reset! !syncState true)))
+                                 (e/for [rm (:queue savedState)]
+                                   (e/client (restoreMsgQueue. rm)))))))))
 
 ; Main entry
 (e/defn App []
