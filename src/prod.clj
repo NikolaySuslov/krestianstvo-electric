@@ -1,6 +1,6 @@
 (ns prod
   (:gen-class)
-  (:require app.krestianstvo ; in prod, load app into server so it can accept clients
+  (:require app.demo ; in prod, load app into server so it can accept clients
             clojure.string
             electric-server-java8-jetty9))
 
