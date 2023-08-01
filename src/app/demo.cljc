@@ -19,7 +19,9 @@
 (e/defn run [a selo] (e/client
                       (println "_run_" a)
                       (swap! (:!appState selo) update-in [:counter] inc)
-                      (new (:futureMsg selo) :run (+ (:time a) 500))))
+                      (new (:futureMsg selo)
+                           :run
+                           0.5)))
 
 ; one time action on inc msg 
 (e/defn incCounter [a selo] (e/client
@@ -37,10 +39,11 @@
 
 (defn cb-fn [cb] (cb @!aa))
 (defn fun [] (let [dfv (m/dfv)] (cb-fn dfv) dfv))
-(def location> (m/ap (loop []
-                       (m/amb (m/? (fun))
-                              (do (m/? (m/sleep 10)) (m/amb))
-                              (recur)))))
+(def location> (m/eduction (distinct)
+                           (m/ap (loop []
+                                   (m/amb (m/? (fun))
+                                          (do (m/? (m/sleep 50)) (m/amb))
+                                          (recur))))))
 
 (def !current-path-id (atom nil))
 (e/def current-path-id (e/client (e/watch !current-path-id)))
@@ -77,21 +80,20 @@
        (dom/props {:class "hover"})
        (dom/on "click"
                (e/fn [e]
-                 (e/server (k/extMsg. :setColor 0 k/session-id color))
-                 )))))
+                 (e/server (k/extMsg. :setColor 0 k/session-id color)))))))
     ; Delete button
    (dom/div
     (dom/props {:class "hover"})
     (dom/on "click"
             (e/fn [e]
-              (e/server (k/extMsg. :resetCanvas 0 k/session-id nil))
-              ))
+              (e/server (k/extMsg. :resetCanvas 0 k/session-id nil))))
     (dom/text "🗑️"))))
 
 ; one time action for updating the cursor
 (e/defn updateCursor [a selo]
   (e/client
    (do
+     ;;(println "_cur_ " a)
      (swap! (:!appState selo) assoc-in [:avatars (:id a) :coords]
             [(:x  (:params (:msg a))) (:y (:params (:msg a)))])
 
@@ -99,13 +101,6 @@
        (swap! (:!appState selo) update-in [:paths current-path-id :points] conj [(:x  (:params (:msg a))) (:y (:params (:msg a)))])))))
 
 ; processing mouse coordinates and sending messages to the reflector
-(e/defn MouseMove []
-  (e/client
-   (let [[x y] (dom/on! js/document "mousemove" (fn [e] [(.-clientX e) (.-clientY e)]))
-         cu (new (m/reductions {} nil (m/sample identity location>)))]
-
-     (reset! !aa [x y])
-     (e/server (k/extMsg. :cursor 0 k/session-id {:x (first cu) :y (second cu)})))))
 
 ; Cursor from the Electric pinter example app
 (e/defn Cursor [id [x y]]
@@ -127,7 +122,7 @@
        (dom/text (cursors index))))))
 
 (e/defn pointerup [e]
-  (e/server (k/extMsg. :pointerup 10 k/session-id nil)))
+  (e/server (k/extMsg. :pointerup 0 k/session-id nil)))
 
 (e/defn pointerdown [e]
   (let [x (.-clientX e)
@@ -135,7 +130,7 @@
         id (.now js/Date)]
 
     (e/server
-     (k/extMsg. :pointerdown 10 k/session-id {:id id :x x :y y}))))
+     (k/extMsg. :pointerdown 0 k/session-id {:id id :x x :y y}))))
 
 (e/defn resetCanvas [a selo]
   (e/client
@@ -195,6 +190,7 @@
    (let [a (:act selo)
          action (:action (:msg a))]
      (println "_act_ " a)
+     ;;(if (not= action :tick) (println "_act_ " a))
      (case action
        :run (run. a selo)
        :inc (incCounter. a selo)
@@ -205,21 +201,41 @@
        :setColor (doSetColor. a selo)
        :resetCanvas (resetCanvas. a selo)
        :default))))
-;; 
+
+(defmacro stampCursor [F a] `(e/server (let [data (new ~F (new ~a))]
+                                         (k/extMsg. :cursor
+                                                    (:instant data)
+                                                    k/session-id
+                                                    {:x (first (:value data)) :y (second (:value data))}))))
+;; Stamp Mouse move with Reflector timestamp
+(e/defn MouseMove []
+  (dom/on "mousemove" (e/fn [e]
+                        (e/client
+                         (reset! !aa [(.-clientX e) (.-clientY e)]))))
+  (app.demo/stampCursor
+   (e/fn [c]
+     (new (m/reductions {} nil
+                        (m/eduction
+                         (map #(do
+                                 {:value %
+                                  :instant (System/currentTimeMillis)}))
+                         c))))
+   (e/fn [] (e/fn []
+              (e/client (new (m/reductions {} nil (m/latest identity location>))))))))
+
 ; Example application with shared local Counter and Cursors
 (e/defn Demo [selo]
   (e/client
    (let [appState (:appState selo)
          !appState (:!appState selo)]
      (dom/div
-      (dom/on "pointerdown" pointerdown)
-      (dom/on "pointerup" pointerup)
 
       (dom/div
+       (dom/on "pointerdown" pointerdown)
+       (dom/on "pointerup" pointerup)
        (Canvas. selo)
-       (Toolbar.))
-
-      (MouseMove.)
+       (Toolbar.)
+       (MouseMove.))
 
       (dispatchActions. selo)
 
@@ -274,9 +290,8 @@
 
      (Demo. (k/Selo. app.demo/play initData)))
 
+   (k/resetSelo.)
    (e/server
     (swap! k/!users assoc k/session-id {:synced false :id k/session-id})
     (println "users: " k/users)
-    (e/on-unmount #(swap! k/!users dissoc k/session-id)))
-
-   (k/resetSelo.)))
+    (e/on-unmount #(swap! k/!users dissoc k/session-id)))))
