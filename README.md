@@ -46,6 +46,12 @@ The Virtual World Framework (VWF) is a means to connect robust 3D, immersive, en
 * https://github.com/virtual-world-framework/vwf
 * https://en.wikipedia.org/wiki/Virtual_world_framework
 
+## Examples
+
+Video demonstrates embedded virtuality featuring pausing and replaying the stream of messages, that are passing through the shared VM.
+
+https://github.com/NikolaySuslov/krestianstvo-electric/assets/298820/4ff13138-9eea-44a8-90ec-0abb156136ac
+
 ## Development
 
 ```
